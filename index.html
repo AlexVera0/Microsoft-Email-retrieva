@@ -1,8 +1,4 @@
-<!--
-  1Acc邮箱获取工具 - 前端界面
-  Author: AlexVera
-  GitHub: https://github.com/AlexVera0
--->
+
 <!DOCTYPE html>
 <html lang="zh-CN">
 
@@ -75,7 +71,7 @@
         .github-link {
             display: flex;
             align-items: center;
-            color: white;
+            color: black; 
             text-decoration: none;
             opacity: 0.6;
             transition: opacity 0.2s;
@@ -179,6 +175,16 @@
             padding: 12px 0;
             display: flex;
             flex-direction: column;
+            transition: width 0.3s ease, min-width 0.3s ease;
+            overflow: hidden;
+            white-space: nowrap; 
+        }
+
+        .sidebar.collapsed {
+            width: 0;
+            min-width: 0;
+            padding: 0;
+            border-right: none;
         }
 
         .nav-item {
@@ -202,6 +208,56 @@
             font-weight: 600;
             border-left: 3px solid var(--outlook-blue);
             padding-left: 21px;
+        }
+
+        .nav-title {
+            padding: 8px 24px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .account-item {
+            padding: 8px 12px 8px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+
+        .account-item:hover {
+            background: #edebe9;
+        }
+
+        .account-item.active {
+            background: #ffffff;
+            color: var(--outlook-blue);
+            font-weight: 600;
+            border-left: 3px solid var(--outlook-blue);
+            padding-left: 21px;
+        }
+
+        .account-email {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .account-delete {
+            color: var(--text-muted);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .account-delete:hover {
+            background: #fde7e9;
+            color: var(--error-red);
         }
 
         .mail-list-container {
@@ -510,6 +566,36 @@
             cursor: pointer;
         }
 
+        .mail-row.unread {
+            background-color: #f4f8fa;
+            border-left: 3px solid var(--outlook-blue);
+            padding-left: 13px;
+        }
+
+        .mail-row.unread .mail-subject,
+        .mail-row.unread .mail-sender {
+            font-weight: 700;
+            color: var(--outlook-dark-blue);
+        }
+
+        .account-badge {
+            background-color: var(--outlook-blue);
+            color: white;
+            border-radius: 10px;
+            padding: 2px 6px;
+            font-size: 0.7rem;
+            line-height: 1;
+            margin-left: auto;
+            margin-right: 6px;
+        }
+
+        .account-error {
+            color: var(--error-red);
+            margin-left: auto;
+            margin-right: 8px;
+            font-size: 0.9rem;
+        }
+
         @media (max-width: 768px) {
             header {
                 flex-direction: column;
@@ -538,20 +624,13 @@
                 width: 100%;
                 border-right: none;
                 border-bottom: 1px solid var(--border-color);
-                flex-direction: row;
-                overflow-x: auto;
+                flex-direction: column; 
                 padding: 4px;
+                max-height: 40vh;
             }
 
-            .nav-item {
+            .nav-item, .account-item {
                 padding: 8px 16px;
-                border-left: none !important;
-                border-bottom: 2px solid transparent;
-                white-space: nowrap;
-            }
-
-            .nav-item.active {
-                border-bottom: 2px solid var(--outlook-blue);
             }
 
             .mail-list-container {
@@ -612,6 +691,14 @@
 <body>
     <header>
         <div class="logo">
+
+            <div onclick="toggleSidebar()" style="cursor: pointer; margin-right: 8px; display: flex; align-items: center;" title="展开/收起侧边栏">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            </div>
             <div class="mail-logo">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -634,16 +721,33 @@
         <div class="header-input-group">
             <input type="text" id="credentialInput" placeholder="粘贴邮箱信息 (邮箱----密码----ClientID----RefreshToken)">
             <div class="clear-btn" onclick="clearInput()">×</div>
-            <button class="btn-header" onclick="fetchMail(currentFolder)">点击收件</button>
+
+            <button class="btn-header" onclick="addAccount()">接收邮件</button>
         </div>
     </header>
 
     <main>
         <nav class="sidebar">
-            <div class="nav-item active" id="nav-inbox" onclick="switchFolder('inbox')">收件箱</div>
-            <div class="nav-item" id="nav-junk" onclick="switchFolder('junkemail')">垃圾邮件</div>
+
+            <div class="nav-title" onclick="toggleFolders()" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
+                <span>文件夹</span>
+                <span id="folderToggleIcon">▼</span>
+            </div>
+            <div id="folderList" style="display:flex; flex-direction:column;">
+                <div class="nav-item active" id="nav-inbox" onclick="switchFolder('inbox')">收件箱</div>
+                <div class="nav-item" id="nav-junk" onclick="switchFolder('junkemail')">垃圾邮件</div>
+            </div>
+
+            <div class="nav-title" onclick="toggleAccounts()" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center; margin-top: 10px;">
+                <span>已添加账号</span>
+                <span id="accountToggleIcon">▼</span>
+            </div>
+            <div id="accountList" style="overflow-y:auto; flex:1; display:flex; flex-direction:column; max-height: 50vh;">
+
+            </div>
+
             <div style="margin-top: auto; padding: 12px 24px; font-size: 0.8rem; color: #a19f9d; cursor: pointer;"
-                onclick="clearCreds()">清除本地缓存</div>
+                onclick="clearCreds()">清除所有缓存</div>
         </nav>
 
         <section class="mail-list-container">
@@ -652,8 +756,12 @@
                     <input type="checkbox" id="selectAll" onclick="toggleSelectAll(this.checked)">
                     <span class="list-header" id="folderTitle">收件箱</span>
                 </div>
-                <button class="btn-action danger" id="multiDeleteBtn" style="display: none;"
-                    onclick="confirmMultiDelete()">删除选中项</button>
+                <div style="display:flex; gap:8px;">
+                    <button class="btn-action" id="multiReadBtn" style="display: none;"
+                        onclick="execMarkAsRead()">标为已读</button>
+                    <button class="btn-action danger" id="multiDeleteBtn" style="display: none;"
+                        onclick="confirmMultiDelete()">删除</button>
+                </div>
             </div>
             <div class="mail-items-scroll" id="mailList">
                 <div class="welcome-view" style="padding: 40px;">输入邮箱信息并点击读取开始同步</div>
@@ -687,10 +795,130 @@
         let cachedMails = [];
         let selectedIds = new Set();
         let activeMailId = null;
+        let activeAccountEmail = null; 
+        let accountsExpanded = true;   
+        let sidebarExpanded = true;    
+        let accountErrors = {};        
+        let accountUnreads = {};       
+
+        function toggleSidebar() {
+            sidebarExpanded = !sidebarExpanded;
+            const sidebar = document.querySelector('.sidebar');
+            if (sidebarExpanded) {
+                sidebar.classList.remove('collapsed');
+            } else {
+                sidebar.classList.add('collapsed');
+            }
+        }
 
         window.onload = () => {
+
             const saved = localStorage.getItem('ms_mail_credentials');
-            if (saved) document.getElementById('credentialInput').value = saved;
+            if (saved) {
+                addAccountFromRaw(saved);
+                localStorage.removeItem('ms_mail_credentials');
+            }
+            renderAccounts();
+            const accounts = getAccounts();
+            if (accounts.length > 0) {
+                switchAccount(accounts[0].email);
+            }
+        }
+
+        function getAccounts() {
+            try {
+                return JSON.parse(localStorage.getItem('ms_mail_accounts')) || [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function setAccounts(accounts) {
+            localStorage.setItem('ms_mail_accounts', JSON.stringify(accounts));
+        }
+
+        let foldersExpanded = true;
+        function toggleFolders() {
+            foldersExpanded = !foldersExpanded;
+            document.getElementById('folderList').style.display = foldersExpanded ? 'flex' : 'none';
+            document.getElementById('folderToggleIcon').innerText = foldersExpanded ? '▼' : '▶';
+        }
+
+        function toggleAccounts() {
+            accountsExpanded = !accountsExpanded;
+            document.getElementById('accountList').style.display = accountsExpanded ? 'flex' : 'none';
+            document.getElementById('accountToggleIcon').innerText = accountsExpanded ? '▼' : '▶';
+        }
+
+        function addAccountFromRaw(raw) {
+            const parts = raw.split('----');
+            if (parts.length < 4) return null;
+            const email = parts[0].trim();
+            let accounts = getAccounts();
+            const idx = accounts.findIndex(a => a.email === email);
+            if (idx >= 0) {
+                accounts[idx].raw = raw;
+            } else {
+                accounts.push({ email, raw });
+            }
+            setAccounts(accounts);
+            return email;
+        }
+
+        function addAccount() {
+            const raw = document.getElementById('credentialInput').value.trim();
+            if (!raw) return showError('请先输入邮箱信息');
+            const email = addAccountFromRaw(raw);
+            if (!email) return showError('邮箱信息格式错误，应为 4 段式');
+
+            document.getElementById('credentialInput').value = '';
+            renderAccounts();
+            switchAccount(email);
+        }
+
+        function removeAccount(email, event) {
+            event.stopPropagation();
+            showConfirm('退出账号', `确定要退出并移除账号 ${email} 吗？`, () => {
+                let accounts = getAccounts().filter(a => a.email !== email);
+                setAccounts(accounts);
+                renderAccounts();
+                if (activeAccountEmail === email) {
+                    activeAccountEmail = null;
+                    document.getElementById('mailList').innerHTML = '<div class="welcome-view" style="padding: 40px;">请选择或导入一个账号</div>';
+                    if (accounts.length > 0) {
+                        switchAccount(accounts[0].email);
+                    }
+                }
+            });
+        }
+
+        function switchAccount(email) {
+            activeAccountEmail = email;
+            renderAccounts();
+            fetchMail(currentFolder);
+        }
+
+        function renderAccounts() {
+            const accounts = getAccounts();
+            const list = document.getElementById('accountList');
+            if (accounts.length === 0) {
+                list.innerHTML = '<div style="padding:10px 24px; font-size:0.8rem; color:#a19f9d;">暂无导入的账号</div>';
+                return;
+            }
+            list.innerHTML = accounts.map(acc => {
+                let badgeHtml = '';
+                if (accountErrors[acc.email]) {
+                    badgeHtml = '<div class="account-error" title="获取失败 (Fetch failed)">⚠️</div>';
+                } else if (accountUnreads[acc.email] > 0) {
+                    badgeHtml = `<div class="account-badge" title="${accountUnreads[acc.email]} 封未读">${accountUnreads[acc.email]}</div>`;
+                }
+                return `
+                <div class="account-item ${acc.email === activeAccountEmail ? 'active' : ''}" onclick="switchAccount('${acc.email}')">
+                    <div class="account-email" title="${acc.email}">${acc.email}</div>
+                    ${badgeHtml}
+                    <div class="account-delete" title="退出账号" onclick="removeAccount('${acc.email}', event)">✕</div>
+                </div>
+            `}).join('');
         }
 
         function clearInput() {
@@ -699,8 +927,9 @@
         }
 
         function clearCreds() {
-            showConfirm('清除缓存', '确定要清除本地保存的邮箱信息吗？', () => {
-                localStorage.removeItem('ms_mail_credentials');
+            showConfirm('清除缓存', '确定要清除本地保存的所有邮箱账号吗？', () => {
+                localStorage.removeItem('ms_mail_credentials'); 
+                localStorage.removeItem('ms_mail_accounts');    
                 document.getElementById('credentialInput').value = '';
                 location.reload();
             });
@@ -742,18 +971,20 @@
 
             selectedIds.clear();
             updateToolbar();
-            const raw = document.getElementById('credentialInput').value.trim();
-            if (raw) fetchMail(folder);
+            if (activeAccountEmail) fetchMail(folder);
         }
 
         async function fetchMail(folder) {
-            const raw = document.getElementById('credentialInput').value.trim();
-            if (!raw) return showError('请先输入邮箱信息');
+            if (!activeAccountEmail) {
+                document.getElementById('mailList').innerHTML = '<div class="welcome-view" style="padding: 40px;">请先选择或导入一个账号</div>';
+                return;
+            }
 
-            localStorage.setItem('ms_mail_credentials', raw);
-            const parts = raw.split('----');
-            if (parts.length < 4) return showError('邮箱信息格式错误，应为 4 段式');
+            const accounts = getAccounts();
+            const account = accounts.find(a => a.email === activeAccountEmail);
+            if (!account) return;
 
+            const parts = account.raw.split('----');
             const clientId = parts[2].trim();
             const refreshToken = parts[3].trim();
 
@@ -771,9 +1002,14 @@
                 if (!result.success) throw new Error(result.error);
 
                 cachedMails = result.data;
+                accountUnreads[activeAccountEmail] = cachedMails.filter(m => m.isRead === false).length;
+                accountErrors[activeAccountEmail] = false;
                 renderMails(cachedMails);
+                renderAccounts();
                 updateStatus('收件成功');
             } catch (error) {
+                accountErrors[activeAccountEmail] = true;
+                renderAccounts();
                 updateStatus('同步异常');
                 showError(error.message);
                 document.getElementById('mailList').innerHTML = '<div style="padding:40px; text-align:center; color:var(--error-red);">读取失败，请检查邮箱信息有效性</div>';
@@ -798,11 +1034,15 @@
         }
 
         function updateToolbar() {
-            const btn = document.getElementById('multiDeleteBtn');
+            const deleteBtn = document.getElementById('multiDeleteBtn');
+            const readBtn = document.getElementById('multiReadBtn');
             const selectAll = document.getElementById('selectAll');
 
-            btn.style.display = selectedIds.size > 0 ? 'block' : 'none';
-            btn.innerText = `删除 ${selectedIds.size} 项`;
+            deleteBtn.style.display = selectedIds.size > 0 ? 'block' : 'none';
+            readBtn.style.display = selectedIds.size > 0 ? 'block' : 'none';
+            deleteBtn.innerText = `删除 ${selectedIds.size} 项`;
+            readBtn.innerText = `标为已读`;
+
             selectAll.checked = selectedIds.size > 0 && selectedIds.size === cachedMails.length;
         }
 
@@ -822,8 +1062,9 @@
                     ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                     : date.toLocaleDateString([], { month: 'short', day: 'numeric' });
 
+                const unreadClass = mail.isRead === false ? 'unread' : '';
                 return `
-                    <div class="mail-row ${isActive || isSelected ? 'active' : ''}" id="mail-row-${mail.id}" onclick="showMail('${mail.id}')">
+                    <div class="mail-row ${isActive || isSelected ? 'active' : ''} ${unreadClass}" id="mail-row-${mail.id}" onclick="showMail('${mail.id}')">
                         <div class="checkbox-container">
                             <input type="checkbox" ${isSelected ? 'checked' : ''} onclick="toggleSelect('${mail.id}', event)">
                         </div>
@@ -850,9 +1091,27 @@
         async function showMail(id) {
             activeMailId = id;
             document.querySelectorAll('.mail-row').forEach(r => r.classList.remove('active'));
-            document.getElementById(`mail-row-${id}`).classList.add('active');
+            const rowEl = document.getElementById(`mail-row-${id}`);
+            if (rowEl) rowEl.classList.add('active');
 
             const mail = cachedMails.find(m => m.id === id);
+
+            if (mail && mail.isRead === false) {
+                mail.isRead = true;
+                if(rowEl) rowEl.classList.remove('unread');
+                accountUnreads[activeAccountEmail] = Math.max(0, (accountUnreads[activeAccountEmail] || 1) - 1);
+                renderAccounts();
+
+                const account = getAccounts().find(a => a.email === activeAccountEmail);
+                if (account) {
+                    const parts = account.raw.split('----');
+                    fetch(`${API_BASE}/${id}/read`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ clientId: parts[2].trim(), refreshToken: parts[3].trim(), isRead: true })
+                    }).catch(e => console.error(e));
+                }
+            }
             const initials = (mail.from?.emailAddress?.name || 'U').charAt(0).toUpperCase();
 
             document.getElementById('mainViewer').innerHTML = `
@@ -896,9 +1155,51 @@
             showConfirm('批量删除', `确定要删除选中的 ${selectedIds.size} 封邮件吗？`, () => execDelete(Array.from(selectedIds)));
         }
 
+        async function execMarkAsRead() {
+            const ids = Array.from(selectedIds);
+            if (ids.length === 0) return;
+
+            const accounts = getAccounts();
+            const account = accounts.find(a => a.email === activeAccountEmail);
+            if (!account) return;
+
+            const parts = account.raw.split('----');
+            const clientId = parts[2].trim();
+            const refreshToken = parts[3].trim();
+
+            updateStatus('正在标记已读...');
+            try {
+                const promises = ids.map(id => fetch(`${API_BASE}/${id}/read`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ clientId, refreshToken, isRead: true })
+                }));
+
+                const results = await Promise.all(promises);
+                const fails = results.filter(r => !r.ok);
+
+                if (fails.length > 0) throw new Error(`有 ${fails.length} 封邮件标记为已读失败`);
+
+                updateStatus('标记已读完成');
+                cachedMails.forEach(m => { if (ids.includes(m.id)) m.isRead = true; });
+                accountUnreads[activeAccountEmail] = cachedMails.filter(m => m.isRead === false).length;
+                selectedIds.clear();
+
+                renderMails(cachedMails);
+                renderAccounts();
+                updateToolbar();
+            } catch (error) {
+                updateStatus('标记异常');
+                showError(error.message);
+            }
+        }
+
         async function execDelete(ids) {
-            const raw = document.getElementById('credentialInput').value.trim();
-            const parts = raw.split('----');
+            const accounts = getAccounts();
+            const account = accounts.find(a => a.email === activeAccountEmail);
+            if (!account) return;
+
+            const parts = account.raw.split('----');
             const clientId = parts[2].trim();
             const refreshToken = parts[3].trim();
 

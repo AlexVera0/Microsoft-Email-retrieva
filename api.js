@@ -1,8 +1,3 @@
-/**
- * 1Acc邮箱获取工具 - 后端服务
- * Author: AlexVera
- * GitHub: https://github.com/AlexVera0
- */
 
 const express = require('express');
 const axios = require('axios');
@@ -43,7 +38,7 @@ async function refreshAccessToken(clientId, refreshToken) {
 
 async function fetchMessages(accessToken, folder = 'inbox') {
     const folderPath = folder === 'junkemail' ? 'junkemail' : 'inbox';
-    const apiUrl = `https://graph.microsoft.com/v1.0/me/mailFolders/${folderPath}/messages?$select=id,subject,from,receivedDateTime,body&$top=50`;
+    const apiUrl = `https://graph.microsoft.com/v1.0/me/mailFolders/${folderPath}/messages?$select=id,subject,from,receivedDateTime,body,isRead&$top=50`;
 
     try {
         const response = await axios.get(apiUrl, {
@@ -97,6 +92,31 @@ app.delete('/api/ms-mail/:id', async (req, res) => {
     }
 });
 
+app.patch('/api/ms-mail/:id/read', async (req, res) => {
+    const { clientId, refreshToken, isRead } = req.body;
+    const { id } = req.params;
+
+    if (!clientId || !refreshToken || !id) {
+        return res.status(400).json({ error: '缺少必要的邮箱信息或邮件 ID' });
+    }
+
+    try {
+        const accessToken = await refreshAccessToken(clientId, refreshToken);
+        const updateUrl = `https://graph.microsoft.com/v1.0/me/messages/${id}`;
+
+        await axios.patch(updateUrl, { isRead }, {
+            headers: { 
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        res.json({ success: true, message: '邮件阅读状态已更新' });
+    } catch (error) {
+        const errorDetail = error.response ? JSON.stringify(error.response.data) : error.message;
+        res.status(500).json({ success: false, error: `状态更新失败: ${errorDetail}` });
+    }
+});
 
 app.listen(port, '0.0.0.0', () => {
     console.log(`极简后端运行在 http://0.0.0.0:${port}`);
